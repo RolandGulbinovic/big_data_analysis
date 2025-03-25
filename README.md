@@ -1,1 +1,5 @@
-# big_data_analysis
+# Big Data Analysis
+
+## Assignment 1
+
+Data for this code is taken from http://web.ais.dk/aisdata/
