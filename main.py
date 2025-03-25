@@ -1,5 +1,5 @@
-from functions import *
-
+from functions import process_large_file
+import time
 
 if __name__ == "__main__":
     start_time = time.time()

@@ -4,6 +4,8 @@ import pandas as pd
 import multiprocessing as mp
 from tqdm import tqdm
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371
@@ -48,8 +50,8 @@ def data_prep(df):
     return df_cleaned
 
 def process_chunk(chunk, idx, k_std, distance_threshold):
-    #pid = os.getpid()
-    #print(f"[Worker {pid}] Processing chunk {idx} of size {len(chunk)}", flush=True)
+    # pid = os.getpid()
+    # print(f"[Worker {pid}] Processing chunk {idx} of size {len(chunk)}", flush=True)
 
     chunk = data_prep(chunk)
     chunk = chunk.sort_values(by=['MMSI', '# Timestamp'])
@@ -57,7 +59,7 @@ def process_chunk(chunk, idx, k_std, distance_threshold):
     chunk = conflicting_positions(chunk)
     chunk['anomaly'] = chunk['anomaly_location'] | chunk['anomaly_speed'] | chunk['anomaly_conflict']
 
-    #print(f"[Worker {pid}] Finished chunk {idx}", flush=True)
+    # print(f"[Worker {pid}] Finished chunk {idx}", flush=True)
 
     return chunk[chunk['anomaly']]
 
@@ -82,3 +84,28 @@ def process_large_file(file_path , chunk_size, cpu_count, k_std, distance_thresh
     final_df = pd.concat(results, ignore_index=True)
 
     return final_df
+
+def generate_speed_plot(configurations_file_path):
+    results = pd.read_csv(configurations_file_path)
+
+    chunk_sizes = results['chunk_size'].unique()
+
+    for cs in chunk_sizes:
+        subset = results[results['chunk_size'] == cs]
+        plt.plot(subset['cpu_count'], subset['execution_time'], marker='o', label=f'Chunk Size = {cs}')
+
+    plt.xlabel('CPU Count')
+    plt.ylabel('Execution Time')
+    plt.title('Configuration Comparison')
+    plt.legend()
+    plt.savefig('speed_plots.png')
+    plt.show()
+
+def speedup_analysis(configurations_file_path):
+    results = pd.read_csv(configurations_file_path)
+
+    sequential_time = results[results['cpu_count'] == 1]['execution_time'].iloc[0]
+
+    results['speedup'] = sequential_time.astype(float) / results['execution_time'].astype(float)
+    print(results)
+    results.to_csv('configurations.csv', index=False)
