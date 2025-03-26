@@ -1,4 +1,4 @@
-from functions import process_large_file
+from functions import process_large_file_parallel
 import time
 
 if __name__ == "__main__":
@@ -6,8 +6,8 @@ if __name__ == "__main__":
     file_path = "data.csv"
     chunk_size = 50000
     cpu_count = 11
-    result = process_large_file(file_path , chunk_size, cpu_count,
-    k_std = 5, distance_threshold = 2)
+    result = process_large_file_parallel(file_path , chunk_size, cpu_count,
+    k_std = 5, distance_threshold = 2, overlap_size=2000)
 
     result.to_csv('output.csv', index=False)
     end_time = time.time()

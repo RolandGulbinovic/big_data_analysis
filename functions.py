@@ -40,13 +40,12 @@ def conflicting_positions(chunk):
 
     return chunk
 
-
+# data prep function removes duplicates and observations where GPS does not work
 def data_prep(df):
     df_cleaned = df.dropna(subset=['# Timestamp', 'MMSI'])
     df_cleaned = df_cleaned[df_cleaned['Type of position fixing device'] == "GPS"]
     df_cleaned = df_cleaned.drop_duplicates()
     df_cleaned = df_cleaned[df_cleaned['Latitude'] != 91.0]
-
     return df_cleaned
 
 def process_chunk(chunk, idx, k_std, distance_threshold):
@@ -63,25 +62,57 @@ def process_chunk(chunk, idx, k_std, distance_threshold):
 
     return chunk[chunk['anomaly']]
 
-def process_large_file(file_path , chunk_size, cpu_count, k_std, distance_threshold):
+def process_large_file_sequential(file_path, chunk_size, k_std, distance_threshold, overlap_size):
 
-    pool = mp.Pool(cpu_count)
     processed_chunks = []
 
     total_rows = sum(1 for row in open(file_path)) - 1
     total_chunks = total_rows // chunk_size + 1
 
+    overlap_buffer = pd.DataFrame()
+
     with tqdm(total=total_chunks, unit='chunk', desc='Processing test chunks') as pbar:
         for i, chunk in enumerate(pd.read_csv(file_path, chunksize=chunk_size)):
-            processed_chunk = pool.apply_async(process_chunk, (chunk, i, k_std, distance_threshold))
+            if not overlap_buffer.empty:
+                combined_chunk = pd.concat([overlap_buffer, chunk], ignore_index=True)
+            else:
+                combined_chunk = chunk
+
+            processed_chunk = process_chunk(combined_chunk, i, k_std, distance_threshold)
             processed_chunks.append(processed_chunk)
+
+            overlap_buffer = chunk.tail(overlap_size)
             pbar.update(1)
 
-    pool.close()
-    pool.join()
+    final_df = pd.concat(processed_chunks, ignore_index=True)
 
-    results = [f.get() for f in processed_chunks]
+    return final_df
+
+def unpack_args(args):
+    return process_chunk(*args)
+
+def process_large_file_parallel(file_path, chunk_size, cpu_count, k_std, distance_threshold, overlap_size):
+    overlap_buffer = pd.DataFrame()
+    tasks = []
+
+    for i, chunk in enumerate(pd.read_csv(file_path, chunksize=chunk_size)):
+        if not overlap_buffer.empty:
+            combined_chunk = pd.concat([overlap_buffer, chunk], ignore_index=True)
+        else:
+            combined_chunk = chunk
+
+        tasks.append((combined_chunk, i, k_std, distance_threshold))
+        overlap_buffer = chunk.tail(overlap_size)
+
+    results = []
+    with mp.Pool(cpu_count) as pool, tqdm(total=len(tasks), desc='Processing chunks') as pbar:
+        for result in pool.imap(unpack_args, tasks):
+            pbar.update(1)
+            results.append(result)
+
     final_df = pd.concat(results, ignore_index=True)
+
+    final_df = final_df.drop_duplicates(subset=['MMSI', 'Latitude', 'Longitude', '# Timestamp'], keep = "first")
 
     return final_df
 
