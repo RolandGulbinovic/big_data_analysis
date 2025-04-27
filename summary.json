@@ -1,0 +1,80 @@
+{
+    "1900": {
+        "top_actor": "Florence Lawrence",
+        "actor_movies": 6,
+        "top_genre": "Silent",
+        "genre_movies": 34
+    },
+    "1910": {
+        "top_actor": "Harold Lloyd",
+        "actor_movies": 161,
+        "top_genre": "Silent",
+        "genre_movies": 2549
+    },
+    "1920": {
+        "top_actor": "Hoot Gibson",
+        "actor_movies": 111,
+        "top_genre": "Silent",
+        "genre_movies": 4465
+    },
+    "1930": {
+        "top_actor": "John Wayne",
+        "actor_movies": 56,
+        "top_genre": "Drama",
+        "genre_movies": 1939
+    },
+    "1940": {
+        "top_actor": "Johnny Mack Brown",
+        "actor_movies": 76,
+        "top_genre": "Comedy",
+        "genre_movies": 1242
+    },
+    "1950": {
+        "top_actor": "Sterling Hayden",
+        "actor_movies": 33,
+        "top_genre": "Drama",
+        "genre_movies": 833
+    },
+    "1960": {
+        "top_actor": "Elvis Presley",
+        "actor_movies": 27,
+        "top_genre": "Drama",
+        "genre_movies": 526
+    },
+    "1970": {
+        "top_actor": "Robert Duvall",
+        "actor_movies": 20,
+        "top_genre": "Drama",
+        "genre_movies": 566
+    },
+    "1980": {
+        "top_actor": "Burt Reynolds",
+        "actor_movies": 20,
+        "top_genre": "Comedy",
+        "genre_movies": 792
+    },
+    "1990": {
+        "top_actor": "Harvey Keitel",
+        "actor_movies": 26,
+        "top_genre": "Drama",
+        "genre_movies": 1103
+    },
+    "2000": {
+        "top_actor": "Samuel L. Jackson",
+        "actor_movies": 29,
+        "top_genre": "Comedy",
+        "genre_movies": 978
+    },
+    "2010": {
+        "top_actor": "Bruce Willis",
+        "actor_movies": 30,
+        "top_genre": "Drama",
+        "genre_movies": 793
+    },
+    "2020": {
+        "top_actor": "Bruce Willis",
+        "actor_movies": 24,
+        "top_genre": "Comedy",
+        "genre_movies": 350
+    }
+}
