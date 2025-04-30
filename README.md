@@ -3,6 +3,8 @@
 Ran everything on Linux (Ubuntu). To download and install Docker I ran - `sudo apt install docker.io`
 
 ## Python code:
+Dataset - [Wikipedia Movie Data](https://github.com/prust/wikipedia-movie-data)
+
 For this I created a very simple python script that takes a _.json_ file with information about movies from the last ~110 years and provides some quick summaries for each decade.
 The script works like this:
 - Cleans entries with missing cast or genre
