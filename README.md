@@ -28,9 +28,9 @@ The Dockerfile is pretty standard - the main lines are:
 
 `RUN pip install --no-cache-dir -r requirements.txt` - Installs the packages (`pandas`)
 
+`WORKDIR /app` - set work directory
 
-
-Then we also copy the files that we want to be in our docker container. 
+Then we also copy the files that we want to be in our docker container:
 
 `COPY requirements.txt .` - libraries
 
@@ -38,6 +38,9 @@ Then we also copy the files that we want to be in our docker container.
 
 `COPY data/ /app/data/` - folder with our input data
 
+
+Then we show what to run when starting the container (our python script)
+`CMD ["python", "your_script_name.py"]`
 
 ## Building docker image
 1. First we build the docker image:
