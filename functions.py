@@ -4,17 +4,15 @@ import psutil
 import threading
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from math import radians, sin, cos, sqrt, atan2
 from multiprocessing import Pool
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 import geopandas as gpd
 import contextily as ctx
 from sklearn.cluster import KMeans
-import seaborn as sns
-import matplotlib.pyplot as plt
-from multiprocessing import Pool
-
 
 NUM_CORES = 11
 

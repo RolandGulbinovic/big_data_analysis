@@ -60,6 +60,8 @@ def main():
         out_path = os.path.join(output_dir, f"clusters_{day_name}.png")
         plot_clusters_with_map(day_df, centers, day_name, out_path)
 
+    print("Clusterisation for each day complete")
+
     plot_stat_by_day(weekday_stats, 'avg_duration', 'Average Duration (min)', 'avg_duration_by_day.png')
     plot_stat_by_day(weekday_stats, 'avg_distance', 'Average Distance (km)', 'avg_distance_by_day.png')
     plot_stat_by_day(weekday_stats, 'trip_count', 'Trip Count', 'trip_count_by_day.png', agg_func='value')

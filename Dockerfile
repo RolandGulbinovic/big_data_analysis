@@ -1,19 +1,29 @@
 FROM python:3.10-slim
 
-# Install system dependencies
+# System dependencies for geospatial libraries
 RUN apt-get update && apt-get install -y \
     build-essential \
+    gdal-bin \
+    libgdal-dev \
+    libspatialindex-dev \
+    python3-dev \
+    python3-pip \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables for GDAL
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Set working directory
 WORKDIR /app
 
-# Copy files
+# Copy your project files
 COPY . .
 
-# Install Python dependencies
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
-
-# Run script
-CMD ["python", "bike_rent.py"]
+# Default command (you can override in docker run)
+CMD ["python", "main.py"]
