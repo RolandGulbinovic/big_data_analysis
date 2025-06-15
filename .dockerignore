@@ -1,0 +1,17 @@
+# Ignore data and output folders
+data/
+output/
+
+# Ignore large files and non-code artifacts
+*.csv
+*.png
+*.jpg
+*.pdf
+*.ipynb
+*.log
+
+# Ignore cache and bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

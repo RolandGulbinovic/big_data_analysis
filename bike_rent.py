@@ -47,22 +47,22 @@ def main():
 
 
     # Clustering
-    output_dir = "cluster_maps"
+    output_dir = "output"
     os.makedirs(output_dir, exist_ok=True)
 
     results = parallel_cluster_by_volume_all_days(df_all, n_clusters=3)
 
     for (day_df, centers), day in zip(results, df_all['day_of_week'].unique()):
-        output_path = f"cluster_maps/volume_cluster_{day}.png"
+        output_path = f"output/volume_cluster_{day}.png"
         plot_volume_clusters_with_map(day_df, centers, day, output_path)
 
     print("Clusterisation for each day complete")
 
-    plot_stat_by_day(weekday_stats, 'avg_duration', 'Average Duration (min)', 'avg_duration_by_day.png')
-    plot_stat_by_day(weekday_stats, 'avg_distance', 'Average Distance (km)', 'avg_distance_by_day.png')
-    plot_stat_by_day(weekday_stats, 'trip_count', 'Trip Count', 'trip_count_by_day.png', agg_func='value')
+    plot_stat_by_day(weekday_stats, 'avg_duration', 'Average Duration (min)', 'output/avg_duration_by_day.png')
+    plot_stat_by_day(weekday_stats, 'avg_distance', 'Average Distance (km)', 'output/avg_distance_by_day.png')
+    plot_stat_by_day(weekday_stats, 'trip_count', 'Trip Count', 'output/trip_count_by_day.png', agg_func='value')
 
-    plot_memory_usage("ram_usage.png")
+    plot_memory_usage("output/ram_usage.png")
     stop_memory_tracker()
 
     end = time.time()
