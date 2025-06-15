@@ -7,6 +7,13 @@ The goal of this task is to use parallelisation to read, process and output resu
 This project performs analysis of bike trip data using Python. It focuses on **distance and duration trends** by day of the week, cleans and transforms raw GPS ride data, and uses **clustering and geospatial visualization**.
 
 ---
+### 0. Folder Structure
+- `rent_bike.py` - the main script to run
+- `functions.py` - file with all the functions
+- `data/` - needs to contain the 12 input data files - IMPORTANT
+- `output/` - all output plots
+
+---
 
 ### 1. Read and Clean Data
 
@@ -40,9 +47,9 @@ This deletes about ~470 000 rows:
   - Print out results
   - Bar plots for duration, distance, and trip count by day
 
-![bar1](avg_duration_by_day.png)
-![bar2](avg_distance_by_day.png)
-![bar3](trip_count_by_day.png)
+![bar1](output/avg_duration_by_day.png)
+![bar2](output/avg_distance_by_day.png)
+![bar3](output/trip_count_by_day.png)
 
 ---
 
@@ -55,9 +62,9 @@ This deletes about ~470 000 rows:
 - Cluster centers are shown with black `×` markers
 
 <p align="center">
-  <img src="cluster_maps/clusters_Monday.png" alt="Monday" width="33%"/>
-  <img src="cluster_maps/clusters_Thursday.png" alt="Thursday" width="33%"/>
-  <img src="cluster_maps/clusters_Saturday.png" alt="Saturday" width="33%"/>
+  <img src="output/volume_cluster_Monday.png" alt="Monday" width="33%"/>
+  <img src="output/volume_cluster_Thursday.png" alt="Thursday" width="33%"/>
+  <img src="output/volume_cluster_Saturday.png" alt="Saturday" width="33%"/>
 </p>
 
 ---
@@ -66,7 +73,7 @@ This deletes about ~470 000 rows:
 
 - Logs memory usage with `psutil`
 
-![Clusters for Friday](ram_usage.png)
+![Clusters for Friday](output/ram_usage.png)
 
 
 ## Results
