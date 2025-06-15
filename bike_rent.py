@@ -47,18 +47,14 @@ def main():
 
 
     # Clustering
-    cluster_results = parallel_cluster_all_days(df_all, n_clusters=3)
-
-    unique_days = df_all["day_of_week"].unique()
-
     output_dir = "cluster_maps"
     os.makedirs(output_dir, exist_ok=True)
 
-    # --- VISUALIZATION ---
+    results = parallel_cluster_by_volume_all_days(df_all, n_clusters=3)
 
-    for (day_df, centers), day_name in zip(cluster_results, unique_days):
-        out_path = os.path.join(output_dir, f"clusters_{day_name}.png")
-        plot_clusters_with_map(day_df, centers, day_name, out_path)
+    for (day_df, centers), day in zip(results, df_all['day_of_week'].unique()):
+        output_path = f"cluster_maps/volume_cluster_{day}.png"
+        plot_volume_clusters_with_map(day_df, centers, day, output_path)
 
     print("Clusterisation for each day complete")
 

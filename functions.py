@@ -143,25 +143,28 @@ def plot_stat_by_day(data, column, y_label, output_path, agg_func='mean'):
     plt.close()
 
 # K-means clustering for starting station - one day
-def cluster_one_day(day_df, n_clusters=3):
-    coords = day_df[["start_lat", "start_lng"]].to_numpy()
+def cluster_one_day_volume(day_df, n_clusters=3):
+    grouped = day_df.groupby(['start_station_name', 'start_lat', 'start_lng']) \
+                    .size().reset_index(name='ride_count')
+
+    coords = grouped[['start_lat', 'start_lng', 'ride_count']].to_numpy()
     kmeans = KMeans(n_clusters=n_clusters, n_init=10, random_state=42).fit(coords)
-    day_df = day_df.copy()
-    day_df["cluster"] = kmeans.labels_
-    return day_df, kmeans.cluster_centers_
+
+    grouped["cluster"] = kmeans.labels_
+    return grouped, kmeans.cluster_centers_
 
 # Run cluster_one_day() for all days of the week (in parallel)
-def parallel_cluster_all_days(df, n_clusters=3):
-    grouped = [df[df["day_of_week"] == day] for day in df["day_of_week"].unique()]
-    with Pool(processes=7) as pool:
-        results = pool.starmap(cluster_one_day, [(group, n_clusters) for group in grouped])
+def parallel_cluster_by_volume_all_days(df, n_clusters=3, processes=7):
+    grouped_days = [df[df["day_of_week"] == day] for day in df["day_of_week"].unique()]
+    with Pool(processes=processes) as pool:
+        results = pool.starmap(cluster_one_day_volume, [(day_df, n_clusters) for day_df in grouped_days])
     return results
 
 # Plot the clutsers on a real map
-def plot_clusters_with_map(day_df, centers, day_name, output_path):
+def plot_volume_clusters_with_map(clustered_df, centers, day_name, output_path):
     gdf = gpd.GeoDataFrame(
-        day_df,
-        geometry=gpd.points_from_xy(day_df["start_lng"], day_df["start_lat"]),
+        clustered_df,
+        geometry=gpd.points_from_xy(clustered_df["start_lng"], clustered_df["start_lat"]),
         crs="EPSG:4326"
     ).to_crs(epsg=3857)
 
@@ -170,13 +173,15 @@ def plot_clusters_with_map(day_df, centers, day_name, output_path):
         crs="EPSG:4326"
     ).to_crs(epsg=3857)
 
+    # Use the fixed color palette
     gdf["color"] = gdf["cluster"].map(CLUSTER_COLORS)
 
     fig, ax = plt.subplots(figsize=(10, 8))
-    gdf.plot(ax=ax, color=gdf["color"], markersize=5)
+    gdf.plot(ax=ax, color=gdf["color"], markersize=gdf["ride_count"] / 10)
     center_gdf.plot(ax=ax, color="black", marker="x", markersize=80)
     ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron)
-    ax.set_title(f"Clusters for {day_name}")
+    ax.set_title(f"Clusters by Station Ride Volume — {day_name}")
     plt.axis("off")
+    plt.tight_layout()
     plt.savefig(output_path, bbox_inches="tight")
     plt.close()
