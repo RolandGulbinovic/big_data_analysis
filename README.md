@@ -54,7 +54,7 @@ This deletes about ~470 000 rows:
 ---
 
 ### 3. Geospatial Clustering
-
+#### Volume Clustering
 - Applies **KMeans clustering** on trip start coordinates for each day
 - Visualizes clusters with:
   - `GeoPandas` for geometry
@@ -67,16 +67,31 @@ This deletes about ~470 000 rows:
   <img src="output/volume_cluster_Saturday.png" alt="Saturday" width="33%"/>
 </p>
 
+#### Full Trip Clustering
+- Applies **KMeans clustering** on both trip start and end coordinates for each weekday
+- Reveals full-trip travel patterns and directional flow
+- Visualizes clusters using:
+  - `GeoPandas` for line geometries
+  - `Contextily` for background map tiles
+
+<p align="center">
+  <img src="output/trip_clusters_Monday.png" alt="Monday" width="33%"/>
+  <img src="output/trip_clusters_Thursday.png" alt="Thursday" width="23%"/>
+  <img src="output/trip_clusters_Saturday.png" alt="Saturday" width="33%"/>
+</p>
+
+
 ---
 
 ### 4. Performance Monitoring
 
 - Logs memory usage with `psutil`
+- Sequential execution time = 600-700 s.
+- Parallel execution time = 160 s.
 
 ![Clusters for Friday](output/ram_usage.png)
 
 
-## Results
 
 
 
