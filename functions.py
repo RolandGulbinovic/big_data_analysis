@@ -1,24 +1,26 @@
 import os
 import time
-import psutil
+import csv
 import threading
+from math import radians, sin, cos, sqrt, atan2
+from multiprocessing import Pool, Process, Manager
+
+import psutil
+
 import pandas as pd
 import numpy as np
-from math import radians, sin, cos, sqrt, atan2
-from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 import geopandas as gpd
 import contextily as ctx
+from shapely.geometry import LineString
+
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
 NUM_CORES = 11
-
-# Memory tracking
-memory_log = []
-track_running = True
 
 # Cluster colors
 CLUSTER_COLORS = {
@@ -27,39 +29,45 @@ CLUSTER_COLORS = {
     2: "#d62728",  # red
 }
 
-# Functions for Memory Tracking
-def start_memory_tracker():
-    global track_running
-    track_running = True
-    threading.Thread(target=memory_tracker, daemon=True).start()
 
-def stop_memory_tracker():
-    global track_running
-    track_running = False
+# Ram Usage tracking (System-wide)
+_memory_log = []
 
-def memory_tracker(interval=1.0):
-    process = psutil.Process(os.getpid())
-    while track_running:
-        mem_mb = process.memory_info().rss / (1024 ** 2)
-        memory_log.append((time.time(), mem_mb))
+def _memory_tracker_system(interval=0.5):
+    while True:
+        used_mb = psutil.virtual_memory().used / 1024**2
+        _memory_log.append((time.time(), used_mb))
         time.sleep(interval)
 
-def plot_memory_usage(output_path="ram_usage.png"):
-    if not memory_log:
+def start_memory_tracker_thread(interval=0.5):
+    t = threading.Thread(target=_memory_tracker_system,
+                         args=(interval,),
+                         daemon=True)
+    t.start()
+    return t
+
+def save_memory_log(path="output/memory_log.csv"):
+    if not _memory_log:
         print("No memory data recorded.")
         return
-    timestamps, mem_usage = zip(*memory_log)
-    timestamps = [t - timestamps[0] for t in timestamps]
-    plt.figure(figsize=(8, 4))
-    plt.plot(timestamps, mem_usage, label="RAM (MB)")
-    plt.xlabel("Time (seconds)")
-    plt.ylabel("Memory Usage (MB)")
+    df = pd.DataFrame(_memory_log, columns=["timestamp","used_mb"])
+    df["timestamp"] -= df["timestamp"].iloc[0]
+    df.to_csv(path, index=False)
+    print(f"Memory log saved to {path}")
+
+def plot_memory_usage(log_path="output/memory_log.csv",
+                      output_path="output/ram_usage.png"):
+    df = pd.read_csv(log_path)
+    plt.figure(figsize=(10,5))
+    plt.plot(df["timestamp"], df["used_mb"])
+    plt.xlabel("Time (s)")
+    plt.ylabel("System RAM Used (MB)")
     plt.title("RAM Usage Over Time")
     plt.grid(True)
     plt.tight_layout()
     plt.savefig(output_path)
-    print(f"RAM usage plot saved to {output_path}")
     plt.close()
+    print(f"RAM usage plot saved to {output_path}")
 
 # Remove invalid coordinates
 def is_valid_coordinate(lat, lng):
@@ -73,6 +81,25 @@ def haversine(row):
     return 6371 * 2 * atan2(sqrt(a), sqrt(1-a))
 
 # Read and process the files by calculating haversine distance and getting rid of invalid/outliers
+
+def chunkify(lst, n_chunks):
+    k, m = divmod(len(lst), n_chunks)
+    return [lst[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n_chunks)]
+
+def process_file_chunk(file_chunk):
+    all_dfs = []
+    total_removed_invalid = 0
+    total_removed_outliers = 0
+
+    for file_path in file_chunk:
+        df, removed_invalid, removed_outliers = process_file(file_path)
+        all_dfs.append(df)
+        total_removed_invalid += removed_invalid
+        total_removed_outliers += removed_outliers
+
+    return pd.concat(all_dfs, ignore_index=True), total_removed_invalid, total_removed_outliers
+
+
 def process_file(file_path):
     df = pd.read_csv(file_path, parse_dates=['started_at', 'ended_at'])
     initial_len = len(df)
@@ -185,3 +212,94 @@ def plot_volume_clusters_with_map(clustered_df, centers, day_name, output_path):
     plt.tight_layout()
     plt.savefig(output_path, bbox_inches="tight")
     plt.close()
+
+# Clustering the count of trips for each station.
+def cluster_and_plot_volume_one_day(day_df, day_name, n_clusters=3, output_dir="output"):
+    grouped = day_df.groupby(['start_station_name', 'start_lat', 'start_lng']) \
+        .size().reset_index(name='ride_count')
+
+    coords = grouped[['start_lat', 'start_lng', 'ride_count']].to_numpy()
+    kmeans = KMeans(n_clusters=n_clusters, n_init=10, random_state=42).fit(coords)
+    grouped["cluster"] = kmeans.labels_
+
+    # Create GeoDataFrames
+    gdf = gpd.GeoDataFrame(
+        grouped,
+        geometry=gpd.points_from_xy(grouped["start_lng"], grouped["start_lat"]),
+        crs="EPSG:4326"
+    ).to_crs(epsg=3857)
+
+    center_gdf = gpd.GeoDataFrame(
+        geometry=gpd.points_from_xy(kmeans.cluster_centers_[:, 1], kmeans.cluster_centers_[:, 0]),
+        crs="EPSG:4326"
+    ).to_crs(epsg=3857)
+
+    gdf["color"] = gdf["cluster"].map(CLUSTER_COLORS)
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(10, 8))
+    gdf.plot(ax=ax, color=gdf["color"], markersize=gdf["ride_count"] / 10)
+    center_gdf.plot(ax=ax, color="black", marker="x", markersize=80)
+    ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron)
+    ax.set_title(f"Clusters by Station Ride Volume — {day_name}")
+    plt.axis("off")
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"volume_cluster_{day_name}.png")
+    plt.savefig(output_path, bbox_inches="tight")
+    plt.close()
+
+    return (day_name, kmeans.cluster_centers_)
+
+
+def parallel_cluster_volume_and_plot(df, n_clusters=3, processes=7):
+    grouped_days = [(df[df["day_of_week"] == day], day) for day in df["day_of_week"].unique()]
+    with Pool(processes=processes) as pool:
+        results = pool.starmap(
+            cluster_and_plot_volume_one_day,
+            [(day_df, day, n_clusters, "output") for day_df, day in grouped_days]
+        )
+    return results
+
+
+# Different approach to clustering - clustering full trips instead of just the starting positions
+def cluster_full_trip_routes(df, day_name, n_clusters=5, output_dir="output"):
+    df = df.copy()
+
+    # Select and scale coordinates
+    coords = df[["start_lat", "start_lng", "end_lat", "end_lng"]].to_numpy()
+    coords_scaled = StandardScaler().fit_transform(coords)
+
+    # Fit KMeans
+    kmeans = KMeans(n_clusters=n_clusters, n_init=10, random_state=42)
+    df["trip_cluster"] = kmeans.fit_predict(coords_scaled)
+
+    # Create LineStrings for plotting
+    df["geometry"] = df.apply(
+        lambda r: LineString([(r["start_lng"], r["start_lat"]), (r["end_lng"], r["end_lat"])]),
+        axis=1
+    )
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:4326").to_crs(epsg=3857)
+
+    os.makedirs(output_dir, exist_ok=True)
+    plot_path = os.path.join(output_dir, f"trip_clusters_{day_name}.png")
+
+    fig, ax = plt.subplots(figsize=(6, 8))  # Narrower, to match station clusters
+    gdf.plot(ax=ax, column="trip_cluster", cmap="tab10", linewidth=1, alpha=0.6, legend=False)
+    ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron)
+    ax.set_title(f"Trip Route Clusters — {day_name}", fontsize=12)
+    ax.set_axis_off()
+    fig.tight_layout(pad=0)
+    plt.savefig(plot_path, bbox_inches='tight', dpi=150)
+    plt.close()
+
+    return f"Saved: {plot_path}"
+
+
+def parallel_trip_route_clustering(df_all, n_clusters=5, processes=7, output_dir="output"):
+    os.makedirs(output_dir, exist_ok=True)
+    grouped = [(df_all[df_all["day_of_week"] == day], day, n_clusters, output_dir)
+               for day in df_all["day_of_week"].unique()]
+    with Pool(processes=processes) as pool:
+        results = pool.starmap(cluster_full_trip_routes, grouped)
+    return results
