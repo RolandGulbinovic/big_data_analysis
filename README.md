@@ -14,7 +14,15 @@ This project performs analysis of bike trip data using Python. It focuses on **d
 - `output/` - all output plots
 
 ---
+### 00. Docker
+- The docker image is published on `rgulbinovic/rental-bike-analysis`
+- To run it on Linux you run:
+    - `docker run \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/output:/app/output \
+  rgulbinovic/bike-rent-analysis`
 
+---
 ### 1. Read and Clean Data
 
 - Loads all monthly CSVs from the `data/` folder in parallel
